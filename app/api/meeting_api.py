@@ -1,7 +1,8 @@
 from fastapi import APIRouter, UploadFile, File
 
-from app.services.diarization_service import diarize_audio
-from app.services.stt_service import transcribe_segments
+#from app.services.diarization_service import diarize_audio
+#from app.services.stt_service import transcribe_segments
+from app.services.pipeline_service import run_pipeline
 
 import shutil
 import os
@@ -25,16 +26,18 @@ async def upload_meeting_audio(
         shutil.copyfileobj(file.file, buffer)
 
     # 화자 분리 기능
-    segments = diarize_audio(file_path)
+    # segments = diarize_audio(file_path)
 
     # STT
-    results = transcribe_segments(
-        file_path,
-        segments
-    )
+    #results = transcribe_segments(
+    #    file_path,
+    #    segments
+    #)
+
+    result = run_pipeline(file_path)
 
     return {
-        "message": "처리 완료",
-        "result": results
+        "message": "회의 분석 완료",
+        "result": result
     }
 
