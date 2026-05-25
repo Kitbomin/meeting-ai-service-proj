@@ -1,49 +1,74 @@
-import whisper
-from pydub import AudioSegment
+import whisperx
+import torch
+
+from whisperx.diarize import DiarizationPipeline
+
+from dotenv import load_dotenv
+
 import os
 
-model = whisper.load_model(
-    "medium"
-).to("cuda")
+load_dotenv()
 
-OUTPUT_DIR = "outputs"
+HF_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def transcribe_segments(
-        audio_path,
-        segments
-):
-    audio = AudioSegment.from_wav(audio_path)
-    results = []
+print("WhisperX Device: ", device)
 
-    for idx, segment in enumerate(segments):
+if device == "cuda":
+    print(torch.cuda.get_device_name(0))
+    
+model = whisperx.load_model(
+    "medium",
+    device=device,
+    compute_type="float32"
+)
 
-        start_ms = int(segment["start"] * 1000)
-        end_ms = int(segment["end"] * 1000)
+def transcribe_audio(audio_file_path: str):
 
-        chunk = audio[start_ms:end_ms]
+    # 오디오 로드
+    audio = whisperx.load_audio(audio_file_path)
 
-        chunk_path = os.path.join(
-            OUTPUT_DIR,
-            f"chunk_{idx}.wav"
-        )
+    # STT
+    result = model.transcribe(audio)
 
-        chunk.export(
-            chunk_path,
-            format="wav"
-        )
+    # Alignment
+    model_a, metadata = whisperx.load_align_model(
+        language_code=result["language"],
+        device=device
+    )
 
-        result = model.transcribe(
-            chunk_path,
-            language="ko"
-        )
+    aligned_result = whisperx.align(
+        result["segments"],
+        model_a,
+        metadata,
+        audio,
+        device
+    )
 
-        results.append({
-            "speaker": segment["speaker"],
-            "start": segment["start"],
-            "end": segment["end"],
-            "text": result["text"]
+    # Diarization
+    diarize_model = DiarizationPipeline(
+    token=HF_TOKEN,
+    device="cpu"
+)
+
+    diarize_segments = diarize_model(audio_file_path)
+
+    # 화자 매핑
+    final_result = whisperx.assign_word_speakers(
+        diarize_segments,
+        aligned_result
+    )
+
+    transcript_result = []
+
+    for segment in final_result["segments"]:
+
+        transcript_result.append({
+            "speaker": segment.get("speaker", "UNKNOWN"),
+            "start": segment.get("start", 0),
+            "end": segment.get("end", 0),
+            "text": segment.get("text", "")
         })
 
-    return results
+    return transcript_result

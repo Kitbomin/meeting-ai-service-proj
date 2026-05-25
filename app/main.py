@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 
-from app.api.meeting_api import router as meeting_router
+from app.routes.meeting_route import router as meeting_router
 
 app = FastAPI()
 
-app.include_router(
-    meeting_router,
-    prefix="/meeting"
-)
+app.include_router(meeting_router)
+
 
 @app.get("/")
-def root():
-    return {"message": "돌아간다아아ㅏ아앙ㄺ"}
+def health_check():
+    return {
+        "message": "Meeting AI Service Running"
+    }
