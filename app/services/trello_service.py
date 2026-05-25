@@ -1,32 +1,53 @@
 import requests
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
-KEY = os.getenv("TRELLO_KEY")
-TOKEN = os.getenv("TRELLO_TOKEN")
-LIST_ID = os.getenv("TRELLO_LIST_ID")
+TRELLO_KEY = os.getenv("TRELLO_KEY")
+TRELLO_TOKEN = os.getenv("TRELLO_TOKEN")
+TRELLO_LIST_ID = os.getenv("TRELLO_LIST_ID")
 
-def create_trello_cards(action_items):
+
+
+def create_trello_card(title, description):
 
     url = "https://api.trello.com/1/cards"
 
-    for item in action_items:
+    query = {
+        "key": TRELLO_KEY,
+        "token": TRELLO_TOKEN,
+        "idList": TRELLO_LIST_ID,
+        "name": title,
+        "desc": description
+    }
 
-        query = {
-            "key": KEY,
-            "token": TOKEN,
-            "idList": LIST_ID,
-            "name": item["task"],
-            "desc": f"""
-담당자: {item["assignee"]}
-마감일: {item["deadline"]}
-우선순위: {item["priority"]}
-"""
+    response = requests.post(
+        url,
+        params=query
+    )
+
+    print("STATUS:", response.status_code)
+    print("RESPONSE:", response.text)
+
+    if response.status_code != 200:
+        return {
+            "success": False,
+            "status": response.status_code,
+            "message": response.text
         }
 
-        requests.post(
-            url,
-            params=query
-        )
+    try:
+        return response.json()
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e),
+            "raw_response": response.text
+        }
+        
+        
+        

@@ -1,27 +1,42 @@
 import ollama
-import json
 
-def extract_action_items(meeting_text):
+
+def extract_action_items(transcript_result):
+
+    transcript_text = ""
+
+    for item in transcript_result:
+
+        speaker = item["speaker"]
+        text = item["text"]
+
+        transcript_text += f"[{speaker}] {text}\n"
+
     prompt = f"""
-다음 회의 내용을 분석해서
-업무(Action Item)를 JSON 배열 형태로 추출하세요.
+다음 회의 내용을 분석하여 Action Item 을 추출해줘.
 
-반드시 JSON만 출력하세요.
+반드시 아래 JSON 형식으로만 응답해.
+
+[
+  {{
+    "title": "업무 제목",
+    "description": "업무 설명"
+  }}
+]
 
 회의 내용:
-{meeting_text}
+
+{transcript_text}
 """
-    
+
     response = ollama.chat(
-        model="qwen2.5:3b",
+        model="llama3.1:latest",
         messages=[
-        {
-            "role": "user",
-            "content": prompt
-        }
+            {
+                "role": "user",
+                "content": prompt
+            }
         ]
     )
 
-    result = response["message"]["content"]
-
-    return json.loads(result)
+    return response["message"]["content"]
