@@ -31,22 +31,19 @@ def create_trello_card(title, description):
     print("STATUS:", response.status_code)
     print("RESPONSE:", response.text)
 
-    if response.status_code != 200:
+    if response.status_code == 200:
+
+        return {
+            "success": True,
+            "status": 200
+        }
+
+    else:
+
         return {
             "success": False,
             "status": response.status_code,
             "message": response.text
-        }
-
-    try:
-        return response.json()
-
-    except Exception as e:
-
-        return {
-            "success": False,
-            "error": str(e),
-            "raw_response": response.text
         }
         
         
