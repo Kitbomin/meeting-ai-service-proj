@@ -23,14 +23,75 @@
 # print(result["segments"])
 
 from app.services.stt_service import transcribe_audio
+from app.services.timeline_visualizer import generate_timeline
+from app.services.waveform_visualizer import generate_waveform_timeline
+from app.services.progress_service import ProgressManager
+# --------------------------------------------------
+# Progress 시작
+# --------------------------------------------------
+
+progress = ProgressManager()
+
+# --------------------------------------------------
+# STEP 1
+# --------------------------------------------------
+
+progress.update(
+    10,
+    "Audio Upload Completed"
+)
+
+# --------------------------------------------------
+# STEP 2
+# --------------------------------------------------
+
+progress.update(
+    30,
+    "Speaker Diarization Running"
+)
+
+# --------------------------------------------------
+# STT + 화자분리
+# --------------------------------------------------
 
 result = transcribe_audio("sample.wav")
 
-print("\n===== RESULT =====\n")
+# --------------------------------------------------
+# STEP 3
+# --------------------------------------------------
 
-for item in result:
+progress.update(
+    60,
+    "Generating Speaker Timeline"
+)
 
-    print(
-        f"[{item['speaker']}] "
-        f"{item['text']}"
-    )
+generate_timeline(result)
+
+# --------------------------------------------------
+# STEP 4
+# --------------------------------------------------
+
+progress.update(
+    80,
+    "Generating Waveform Visualization"
+)
+
+generate_waveform_timeline(
+    "sample.wav",
+    result
+)
+
+# --------------------------------------------------
+# STEP 5
+# --------------------------------------------------
+
+progress.update(
+    100,
+    "Trello Automation Completed"
+)
+
+# --------------------------------------------------
+# 종료
+# --------------------------------------------------
+
+progress.finish()

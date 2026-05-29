@@ -1,4 +1,5 @@
 import ollama
+import json
 
 
 def extract_action_items(transcript_result):
@@ -38,5 +39,19 @@ def extract_action_items(transcript_result):
             }
         ]
     )
+    
+    content = response["message"]["content"]
 
-    return response["message"]["content"]
+    try:
+
+        action_items = json.loads(content)
+
+        return action_items
+
+    except Exception as e:
+
+        print("JSON Parsing Error:", e)
+
+        print(content)
+
+        return []
