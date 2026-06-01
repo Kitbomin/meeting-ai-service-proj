@@ -19,7 +19,7 @@ if device == "cuda":
     print(torch.cuda.get_device_name(0))
     
 model = whisperx.load_model(
-    "large",
+    "medium",
     device=device,
     compute_type="float32"
 )
