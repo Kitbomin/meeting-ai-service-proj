@@ -1,11 +1,22 @@
+import os
+import sys
+
+if sys.platform == "win32":
+    import importlib.util
+    for _pkg in ("nvidia.cudnn", "nvidia.cublas"):
+        _spec = importlib.util.find_spec(_pkg)
+        if _spec and _spec.submodule_search_locations:
+            _bin_dir = os.path.join(list(_spec.submodule_search_locations)[0], "bin")
+            if os.path.isdir(_bin_dir):
+                os.add_dll_directory(_bin_dir)
+                os.environ["PATH"] = _bin_dir + os.pathsep + os.environ.get("PATH", "")
+
 import whisperx
 import torch
 
 from whisperx.diarize import DiarizationPipeline
 
 from dotenv import load_dotenv
-
-import os
 
 load_dotenv()
 
@@ -48,7 +59,7 @@ def transcribe_audio(audio_file_path: str):
 
     # Diarization
     diarize_model = DiarizationPipeline(
-    token=HF_TOKEN,
+    use_auth_token=HF_TOKEN,
     device="cpu"
 )
 
