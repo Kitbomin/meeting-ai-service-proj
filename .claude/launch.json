@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "streamlit-dashboard",
+      "runtimeExecutable": "conda",
+      "runtimeArgs": ["run", "-n", "meeting-ai-venv", "--no-capture-output", "streamlit", "run", "dashboard.py", "--server.port", "8501", "--server.headless", "true"],
+      "port": 8501
+    },
+    {
+      "name": "fastapi-server",
+      "runtimeExecutable": "conda",
+      "runtimeArgs": ["run", "-n", "meeting-ai-venv", "--no-capture-output", "python", "-m", "uvicorn", "app.main:app", "--port", "8123"],
+      "port": 8123
+    }
+  ]
+}
