@@ -61,7 +61,7 @@ os.makedirs(
 
 uploaded_file = st.file_uploader(
     "회의 음성 파일 업로드",
-    type=["wav", "mp3", "m4a"]
+    type=["wav", "mp3", "m4a", "mp4"]
 )
 
 # --------------------------------------------------
