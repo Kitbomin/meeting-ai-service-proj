@@ -1,6 +1,17 @@
 __pycache__/
-/.env
-/.gitignore
+.env
 outputs/
 uploads/
+app/uploads/
 /node_modules
+venv/
+
+# 개인 음성·녹음 파일은 저장소에 올리지 않는다
+*.wav
+*.m4a
+*.mp3
+*.mp4
+
+# WER 평가용 정답 전사문/결과 (실제 대화 내용이 들어감) — 예시는 wer_references.example.json
+wer_references.json
+wer_report.json

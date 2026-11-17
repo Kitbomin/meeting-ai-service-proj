@@ -246,6 +246,8 @@ if uploaded_file:
             "Action Items"
         )
 
+        trello_results = []
+
         if len(action_items) == 0:
 
             st.warning(
@@ -253,8 +255,6 @@ if uploaded_file:
             )
 
         else:
-            
-            trello_results = []
 
             for item in action_items:
 
@@ -291,6 +291,25 @@ if uploaded_file:
         
         st.subheader("Trello Result")
 
-        st.success(
-            "AI 회의 자동화 프로세스 완료"
-        )
+        success_count = sum(1 for r in trello_results if r.get("success"))
+
+        if trello_results and success_count == len(trello_results):
+
+            st.success(
+                f"Trello 카드 {success_count}개 등록 완료 · AI 회의 자동화 프로세스 완료"
+            )
+
+        elif trello_results:
+
+            st.warning(
+                f"Trello 카드 {len(trello_results)}개 중 {success_count}개만 등록되었습니다. "
+                ".env 의 TRELLO_KEY / TRELLO_TOKEN / TRELLO_LIST_ID 를 확인하세요."
+            )
+
+            for r in trello_results:
+                if not r.get("success"):
+                    st.code(f"HTTP {r.get('status')}: {r.get('message', '')}")
+
+        else:
+
+            st.info("등록할 업무 항목이 없어 Trello로 보낸 카드가 없습니다.")

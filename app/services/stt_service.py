@@ -35,6 +35,35 @@ model = whisperx.load_model(
     compute_type="float32"
 )
 
+# 정렬·화자분리 모델은 로딩이 무거우므로 첫 요청 때 한 번만 만들고 재사용한다.
+_align_models = {}
+_diarize_model = None
+
+
+def _get_align_model(language_code: str):
+
+    if language_code not in _align_models:
+        _align_models[language_code] = whisperx.load_align_model(
+            language_code=language_code,
+            device=device
+        )
+
+    return _align_models[language_code]
+
+
+def _get_diarize_model():
+
+    global _diarize_model
+
+    if _diarize_model is None:
+        _diarize_model = DiarizationPipeline(
+            use_auth_token=HF_TOKEN,
+            device="cpu"
+        )
+
+    return _diarize_model
+
+
 def transcribe_audio(audio_file_path: str):
 
     # 오디오 로드
@@ -44,10 +73,7 @@ def transcribe_audio(audio_file_path: str):
     result = model.transcribe(audio)
 
     # Alignment
-    model_a, metadata = whisperx.load_align_model(
-        language_code=result["language"],
-        device=device
-    )
+    model_a, metadata = _get_align_model(result["language"])
 
     aligned_result = whisperx.align(
         result["segments"],
@@ -58,12 +84,7 @@ def transcribe_audio(audio_file_path: str):
     )
 
     # Diarization
-    diarize_model = DiarizationPipeline(
-    use_auth_token=HF_TOKEN,
-    device="cpu"
-)
-
-    diarize_segments = diarize_model(audio_file_path)
+    diarize_segments = _get_diarize_model()(audio_file_path)
 
     # 화자 매핑
     final_result = whisperx.assign_word_speakers(
@@ -83,3 +104,13 @@ def transcribe_audio(audio_file_path: str):
         })
 
     return transcript_result
+
+
+def transcribe_text_only(audio_file_path: str) -> str:
+    """화자분리 없이 STT 결과 텍스트만 반환 (WER 평가용)"""
+
+    audio = whisperx.load_audio(audio_file_path)
+
+    result = model.transcribe(audio)
+
+    return " ".join(segment["text"].strip() for segment in result["segments"])

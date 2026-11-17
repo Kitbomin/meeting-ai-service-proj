@@ -1,63 +1,59 @@
-import json
-from fastapi import APIRouter, UploadFile, File
 import os
+import uuid
 
-from app.services.stt_service import transcribe_audio
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
 from app.services.action_item_service import extract_action_items
+from app.services.stt_service import transcribe_audio
 from app.services.trello_service import create_trello_card
 
 router = APIRouter()
 
 UPLOAD_DIR = "app/uploads"
+ALLOWED_EXTENSIONS = {".wav", ".mp3", ".m4a", ".mp4"}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-@router.post("/meeting/upload")
-async def upload_meeting_audio(file: UploadFile = File(...)):
+def _safe_upload_path(filename: str) -> str:
+    """사용자가 보낸 파일명을 경로로 그대로 쓰지 않는다 (../ 경로 조작 방지)."""
 
-    file_path = f"{UPLOAD_DIR}/{file.filename}"
+    ext = os.path.splitext(os.path.basename(filename or ""))[1].lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 형식입니다: {ext or '(없음)'}")
+
+    return os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex}{ext}")
+
+
+@router.post("/meeting/upload")
+async def upload_meeting_audio(file: UploadFile = File(...), send_to_trello: bool = True):
+
+    file_path = _safe_upload_path(file.filename)
 
     with open(file_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    # -----------------------------
     # STT + 화자분리
-    # -----------------------------
-
     transcript_result = transcribe_audio(file_path)
 
-    # -----------------------------
-    # Action Item 추출
-    # -----------------------------
-
+    # Action Item 추출 (이미 list[dict] 로 반환됨 — 다시 json.loads 하면 안 됨)
     action_items = extract_action_items(transcript_result)
 
-    try:
-        action_items_json = json.loads(action_items)
-    except:
-        action_items_json = []
-
-    # -----------------------------
     # Trello 등록
-    # -----------------------------
-
     trello_results = []
 
-    for item in action_items_json:
-
-        title = item.get("title", "회의 업무")
-        description = item.get("description", "")
-
-        trello_result = create_trello_card(
-            title,
-            description
-        )
-
-        trello_results.append(trello_result)
+    if send_to_trello:
+        for item in action_items:
+            trello_results.append(
+                create_trello_card(
+                    item.get("title", "회의 업무"),
+                    item.get("description", "")
+                )
+            )
 
     return {
         "transcript": transcript_result,
-        "action_items": action_items_json,
+        "action_items": action_items,
         "trello": trello_results
     }
